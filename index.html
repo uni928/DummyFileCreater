@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ダミーファイル作成 .bat デザイナー</title>
+<style>
+  :root{
+    --bg:#0f1218; /* deep slate */
+    --panel:#161b22; /* card */
+    --panel-2:#0b0e13; /* header/footer */
+    --accent:#6ea8fe;
+    --accent-2:#8bd3ff;
+    --text:#eef3ff;
+    --muted:#98a2b3;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --border: #243041;
+    --shadow: 0 10px 30px rgba(0,0,0,.35), 0 2px 10px rgba(0,0,0,.25);
+    --radius: 16px;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0; background: radial-gradient(1200px 800px at 10% -10%,#1b2230,transparent 60%),
+                             radial-gradient(1200px 800px at 110% 10%,#101928,transparent 60%),
+                             var(--bg);
+    color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    letter-spacing:.2px;
+  }
+  header{
+    position:sticky; top:0; z-index:10;
+    backdrop-filter: blur(10px);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    border-bottom:1px solid var(--border);
+  }
+  .container{max-width:1200px; margin:0 auto; padding:16px 20px 24px;}
+  .title{
+    display:flex; align-items:center; gap:12px;
+  }
+  .title h1{font-size:20px; margin:10px 0; letter-spacing:.4px}
+  .app{
+    display:grid; grid-template-columns: 360px 1fr; gap:18px; margin-top:16px;
+  }
+  .card{background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); overflow:hidden;
+  }
+  .card-header{padding:12px 14px; background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .card-header h2{font-size:14px; margin:0; color:#e7eeff; letter-spacing:.3px}
+  .card-body{padding:14px}
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px;}
+  .btn{appearance:none; border:1px solid var(--border); background:rgba(255,255,255,.03); color:var(--text); padding:8px 10px; border-radius:12px; cursor:pointer; font-size:12px; transition:.15s ease; box-shadow: inset 0 -2px rgba(255,255,255,.04)}
+  .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.06)}
+  .btn:active{transform: translateY(0)}
+  .btn.accent{border-color: rgba(110,168,254,.35); background: linear-gradient(180deg, rgba(110,168,254,.25), rgba(110,168,254,.08));}
+  .btn.ok{border-color: rgba(34,197,94,.3); background: linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.08));}
+  .btn.warn{border-color: rgba(245,158,11,.3); background: linear-gradient(180deg, rgba(245,158,11,.22), rgba(245,158,11,.08));}
+  .btn.danger{border-color: rgba(239,68,68,.3); background: linear-gradient(180deg, rgba(239,68,68,.22), rgba(239,68,68,.08));}
+  .divider{height:1px; background:var(--border); margin:12px -14px}
+  .muted{color:var(--muted); font-size:12px}
+
+  /* Tree */
+  .tree{list-style:none; padding-left:6px; margin:0}
+  .tree li{margin:4px 0;}
+  .node{
+    display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:10px; cursor:pointer; position:relative;
+  }
+  .node:hover{background: rgba(255,255,255,.04)}
+  .node.selected{background: linear-gradient(180deg, rgba(139,211,255,.22), rgba(139,211,255,.06)); border:1px solid rgba(139,211,255,.35)}
+  .node .chev{width:14px; opacity:.8}
+  .node .folder{width:16px}
+  .node input[type="text"]{background: transparent; border:none; outline:none; color:var(--text); font-size:13px; width:100%}
+  .indent{margin-left:18px}
+
+  /* Files editor */
+  .field{display:flex; gap:8px; align-items:center; margin:8px 0}
+  .input, textarea{
+    background: rgba(255,255,255,.06);
+    border:1px solid var(--border); border-radius:12px; color:var(--text);
+    padding:8px 10px; font-size:13px; width:100%; outline:none; transition:.15s;
+  }
+  .input:focus, textarea:focus{box-shadow: 0 0 0 3px rgba(110,168,254,.2)}
+  .badge{border:1px dashed var(--border); padding:3px 8px; border-radius:999px; font-size:11px; color:#cfe4ff}
+  .files-list{display:flex; flex-direction:column; gap:8px;}
+  .file-item{display:flex; gap:8px; align-items:center}
+  .file-item input{flex:1}
+  .help{font-size:12px; color:#c3d3ff}
+  .note{background: rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.3); color:#ffe7b3; padding:8px 10px; border-radius:12px; font-size:12px}
+
+  footer{margin-top:18px; padding:16px 0 22px; color:#aab3c5; font-size:12px; text-align:center}
+
+  @media (max-width: 920px){
+    .app{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="url(#g1)" stroke-width="1.6"/>
+          <defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#8bd3ff"/><stop offset="1" stop-color="#6ea8fe"/></linearGradient></defs>
+        </svg>
+        <h1>ダミーファイル作成 .bat デザイナー</h1>
+        <span class="badge">編集は IndexedDB に自動保存</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container app">
+    <!-- Left: Tree -->
+    <section class="card">
+      <div class="card-header">
+        <h2>フォルダ構成</h2>
+        <div class="toolbar">
+          <button class="btn accent" id="btnAddInside">選択中の中にフォルダを作る</button>
+          <button class="btn" id="btnAddSibling">同階層にフォルダを作る</button>
+          <button class="btn" id="btnToggle">展開/折りたたみ</button>
+          <input class="input" id="renameInput" placeholder="フォルダ名" style="max-width:160px"/>
+          <button class="btn" id="btnRename">名前変更</button>
+          <button class="btn danger" id="btnDelete">削除</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul id="tree" class="tree"></ul>
+        <p class="muted" style="margin-top:10px">ヒント: ノード名をクリックで選択。上部の入力欄に新しい名前を入れて「名前変更」を押すと変更できます。</p>
+      </div>
+    </section>
+
+    <!-- Right: Editor -->
+    <section class="card">
+      <div class="card-header">
+        <h2>詳細設定 / エクスポート</h2>
+        <div class="toolbar">
+          <button class="btn ok" id="btnDownload">.bat の内容をコピー</button>
+          <button class="btn warn" id="btnReset">リセット</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label class="muted" style="min-width:140px">ルート名（任意）</label>
+          <input id="rootName" class="input" placeholder="例) MyProject" />
+        </div>
+        <div class="divider"></div>
+
+        <div id="filesSection">
+          <div class="help" style="margin-bottom:8px">どのフォルダにもダミーファイル（0KB）を設定できます。
+            子フォルダがある場合は、その配下の最も深い階層すべてに同じファイル群を作成します。</div>
+          <div id="leafNote" class="note" style="display:none; margin-bottom:8px">このフォルダに設定したダミーファイルは、配下の最深階層すべてに作成されます。</div>
+          <div class="files-list" id="filesList"></div>
+          <div class="field">
+            <input id="newFileName" class="input" placeholder="ファイル名（例: README.txt）"/>
+            <button class="btn" id="btnAddFile">追加</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <details>
+          <summary class="muted">出力プレビュー（読み取り専用）</summary>
+          <textarea id="preview" rows="14" readonly style="width:100%; margin-top:8px"></textarea>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    © 2025 Dummy Bat Designer — フォルダ構成を設計して、ワンクリックで .bat を生成します。
+  </footer>
+
+<script>
+/* ==========================
+   型/状態
+========================== */
+const DB_NAME = 'dummy-bat-designer-v1';
+const STORE_NAME = 'kv';
+
+/** @typedef {{ id:string, name:string, open:boolean, children:TreeNode[], files:string[] }} TreeNode */
+let state = {
+  rootName: '',
+  tree: /** @type {TreeNode} */ ({ id: uid(), name: 'root', open: true, children: [], files: [] }),
+  selectedId: null,
+};
+
+/* ==========================
+   IndexedDB (超軽量KV)
+========================== */
+let db; // IDBDatabase
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(STORE_NAME)){
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    req.onsuccess = () => { db = req.result; resolve(); };
+    req.onerror = () => reject(req.error);
+  });
+}
+function idbSet(key, val){
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_NAME,'readwrite');
+    tx.objectStore(STORE_NAME).put(val, key);
+    tx.oncomplete = ()=>resolve();
+    tx.onerror = ()=>reject(tx.error);
+  });
+}
+function idbGet(key){
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_NAME,'readonly');
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+function idbClear(){
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(STORE_NAME,'readwrite');
+    const req = tx.objectStore(STORE_NAME).clear();
+    req.onsuccess = ()=>resolve();
+    req.onerror = ()=>reject(req.error);
+  });
+}
+
+/* ==========================
+   Util
+========================== */
+function uid(){ return 'id-' + Math.random().toString(36).slice(2,9); }
+function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function findNodeById(node, id){
+  if(node.id === id) return node;
+  for(const c of node.children){
+    const found = findNodeById(c, id);
+    if(found) return found;
+  }
+  return null;
+}
+function findParent(root, id, parent=null){
+  if(root.id === id) return parent;
+  for(const c of root.children){
+    const p = findParent(c, id, root);
+    if(p) return p;
+  }
+  return null;
+}
+function isLeaf(node){ return !node.children || node.children.length===0; }
+
+/* ==========================
+   Render: Tree
+========================== */
+const treeEl = document.getElementById('tree');
+function renderTree(){
+  treeEl.innerHTML = '';
+  const ul = document.createElement('ul'); ul.className='tree';
+  ul.appendChild(renderNode(state.tree, 0));
+  treeEl.appendChild(ul);
+  updateRenameUI();
+}
+function renderNode(node, depth){
+  const li = document.createElement('li');
+  const row = document.createElement('div'); row.className='node';
+  if(node.id===state.selectedId) row.classList.add('selected');
+
+  const chev = document.createElement('span'); chev.className='chev';
+  chev.textContent = node.children && node.children.length? (node.open?'▾':'▸') : '·';
+  chev.style.width='14px';
+  chev.addEventListener('click', (e)=>{ e.stopPropagation(); if(node.children.length){ node.open=!node.open; saveAndRender(); }});
+
+  const icon = document.createElement('span'); icon.className='folder'; icon.textContent='📁';
+
+  const name = document.createElement('input'); 
+name.type = 'text'; 
+name.value = node.name; 
+name.readOnly = true;
+
+  row.appendChild(chev); row.appendChild(icon); row.appendChild(name);
+  row.style.paddingLeft = 6 + depth*12 + 'px';
+  row.addEventListener('click', () => { 
+  state.selectedId = node.id; 
+  renderTree(); 
+  renderRight(); 
+});
+  li.appendChild(row);
+
+  if(node.open && node.children && node.children.length){
+    const ul = document.createElement('ul'); ul.className='tree indent';
+    for(const c of node.children){ ul.appendChild(renderNode(c, depth+1)); }
+    li.appendChild(ul);
+  }
+  return li;
+}
+
+/* ==========================
+   Right pane (files editor)
+========================== */
+const filesListEl = document.getElementById('filesList');
+const newFileNameEl = document.getElementById('newFileName');
+const leafNoteEl = document.getElementById('leafNote');
+const rootNameEl = document.getElementById('rootName');
+
+function renderRight(){
+  rootNameEl.value = state.rootName || '';
+  const node = state.selectedId ? findNodeById(state.tree, state.selectedId) : null;
+  filesListEl.innerHTML='';
+  leafNoteEl.style.display='none';
+  if(!node){
+    const p=document.createElement('p'); p.className='muted'; p.textContent='左のフォルダ構成から編集するフォルダを選択してください。';
+    filesListEl.appendChild(p); return;
+  }
+  if(!isLeaf(node)){
+    leafNoteEl.style.display='block';
+    leafNoteEl.textContent='このフォルダに設定したダミーファイルは、配下の最深階層すべてに作成されます。';
+  } else {
+    leafNoteEl.style.display='none';
+  }
+
+  // Render file items
+  if(!node.files) node.files=[];
+  if(node.files.length===0){
+    const p=document.createElement('p'); p.className='muted'; p.textContent='このフォルダに作成するダミーファイルを追加してください。';
+    filesListEl.appendChild(p);
+  } else {
+    node.files.forEach((fname, idx)=>{
+      const row = document.createElement('div'); row.className='file-item';
+      const input = document.createElement('input'); input.className='input'; input.value=fname; input.placeholder='ファイル名';
+      input.addEventListener('change', ()=>{ node.files[idx] = sanitizeFile(input.value); saveAndRender(); });
+      const del = document.createElement('button'); del.className='btn danger'; del.textContent='削除';
+      del.addEventListener('click', ()=>{ node.files.splice(idx,1); saveAndRender(); });
+      row.appendChild(input); row.appendChild(del);
+      filesListEl.appendChild(row);
+    });
+  }
+}
+
+function sanitizeFile(name){
+  let v = (name||'').trim();
+  if(!v) v = 'dummy.txt';
+  // Windows禁止文字を軽く置換
+  v = v.replace(/[\\/:*?"<>|]/g,'_');
+  return v;
+}
+
+/* ==========================
+   Buttons
+========================== */
+const btnAddInside = document.getElementById('btnAddInside');
+const btnAddSibling = document.getElementById('btnAddSibling');
+const btnDelete = document.getElementById('btnDelete');
+const btnDownload = document.getElementById('btnDownload');
+const btnReset = document.getElementById('btnReset');
+const btnToggle = document.getElementById('btnToggle');
+const renameInput = document.getElementById('renameInput');
+const btnRename = document.getElementById('btnRename');
+
+btnAddInside.addEventListener('click', ()=>{
+  const cur = state.selectedId ? findNodeById(state.tree, state.selectedId) : state.tree;
+  const target = cur || state.tree;
+  if(!target.children) target.children=[];
+  target.open = true;
+  target.children.push({id:uid(), name:'new-folder', open:true, children:[], files: []});
+  saveAndRender();
+});
+
+btnAddSibling.addEventListener('click', ()=>{
+  if(!state.selectedId || state.selectedId===state.tree.id){
+    // root の兄弟は作らない → root の配下に
+    state.tree.children.push({id:uid(), name:'new-folder', open:true, children:[], files: []});
+  } else {
+    const parent = findParent(state.tree, state.selectedId);
+    if(parent){
+      parent.open = true;
+      parent.children.push({id:uid(), name:'new-folder', open:true, children:[], files: []});
+    }
+  }
+  saveAndRender();
+});
+
+btnDelete.addEventListener('click', ()=>{
+  const id = state.selectedId;
+  if(!id || id===state.tree.id){ alert('rootは削除できません'); return; }
+  const parent = findParent(state.tree, id);
+  if(!parent) return;
+  if(!confirm('選択中のフォルダを削除しますか？（配下もすべて削除）')) return;
+  parent.children = parent.children.filter(c=>c.id!==id);
+  state.selectedId = parent.id;
+  saveAndRender();
+});
+
+btnToggle.addEventListener('click', () => {
+  function toggleAll(node) {
+    node.open = !node.open;
+    (node.children || []).forEach(toggleAll);
+  }
+  toggleAll(state.tree);
+  saveAndRender();
+});
+
+btnRename.addEventListener('click', doRename);
+renameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doRename(); });
+
+function doRename() {
+  const node = state.selectedId ? findNodeById(state.tree, state.selectedId) : null;
+  if (!node) return;
+  const v = (renameInput.value || '').trim() || 'untitled';
+  node.name = v;
+  saveAndRender();
+}
+
+function updateRenameUI() {
+  const node = state.selectedId ? findNodeById(state.tree, state.selectedId) : null;
+  if (node) {
+    renameInput.disabled = false;
+    btnRename.disabled = false;
+    renameInput.value = node.name || '';
+  } else {
+    renameInput.disabled = true;
+    btnRename.disabled = true;
+    renameInput.value = '';
+  }
+}
+
+
+newFileNameEl.addEventListener('keydown', e=>{
+  if(e.key==='Enter') addFile();
+});
+
+function addFile(){
+  const cur = state.selectedId && findNodeById(state.tree, state.selectedId);
+  if(!cur){ alert('ファイルを追加するフォルダを選んでください'); return; }
+  
+  if(!cur.files) cur.files=[];
+  const name = sanitizeFile(newFileNameEl.value||'dummy.txt');
+  if(!name){ return; }
+  cur.files.push(name); newFileNameEl.value=''; saveAndRender();
+}
+
+const btnAddFile = document.getElementById('btnAddFile');
+btnAddFile.addEventListener('click', addFile);
+
+rootNameEl.addEventListener('change', ()=>{ state.rootName = rootNameEl.value.trim(); saveAndRender(); });
+
+btnReset.addEventListener('click', async ()=>{
+  if(!confirm('すべての編集内容をリセットしますか？（IndexedDBも削除）')) return;
+  await idbClear();
+  state = { rootName:'', tree:{ id:uid(), name:'root', open:true, children:[], files: [] }, selectedId:null };
+  saveAndRender();
+});
+
+btnDownload.addEventListener('click', async () => {
+  const bat = buildBat(state);
+  const message = `bat ファイルの中身をクリップボードにコピーしました。
+
+コピーした内容が中身の bat ファイルを作成してください。`;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(bat);
+      alert(message);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = bat; ta.style.position = 'fixed'; ta.style.opacity = '0'; ta.style.pointerEvents = 'none';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) {
+        alert(message);
+      } else {
+        throw new Error('コピーに失敗しました');
+      }
+    }
+
+    // ▼ ここに「ダウンロード処理」を移動（必要な場合のみ）
+    const blob = new Blob([bat], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    const filename = (state.rootName ? state.rootName + '_' : '') + 'create_dummy_structure.bat';
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+  } catch (e) {
+    console.error(e);
+    alert('クリップボードへのコピーに失敗しました。プレビュー内容を手動でコピーしてください。');
+  }
+});
+
+/* ==========================
+   .bat 生成
+========================== */
+function gatherPaths(node, base=[]) {
+  const cur = [...base, node.name];
+  let dirs = [cur]; // 自分自身
+  for(const c of node.children||[]){
+    dirs = dirs.concat(gatherPaths(c, cur));
+  }
+  return dirs;
+}
+
+function leafFilesMap(node, base=[], inherited=[], map={}){
+  const cur = [...base, node.name];
+  const current = (node.files||[]);
+  const merged = [...inherited, ...current];
+  if(isLeaf(node)){
+    const uniq = Array.from(new Set(merged.map(sanitizeFile)));
+    map[cur.join('/')] = uniq;
+  } else {
+    for(const c of node.children||[]) leafFilesMap(c, cur, merged, map);
+  }
+  return map;
+}
+
+function buildBat(state){
+  const root = deepClone(state.tree);
+  const rootName = (state.rootName||'').trim();
+  // root表示名を置き換え（実フォルダ名に使う）
+  if(rootName) root.name = rootName;
+
+  // Windowsバッチ（UTF-8）
+  const lines = [];
+  lines.push('@echo off');
+  lines.push('chcp 65001 >nul');
+  lines.push('setlocal enabledelayedexpansion');
+  lines.push('');
+  lines.push('REM ここで作成する基点は、このバッチと同じフォルダ（%~dp0）です。');
+  lines.push('set BASE=%~dp0');
+  lines.push('');
+
+  // 1) すべてのディレクトリ作成
+  const allDirs = gatherPaths(root).map(parts => parts.join('\\'));
+  // 重複除去
+  const uniq = Array.from(new Set(allDirs));
+  for(const rel of uniq){
+    const line = `if not exist "!BASE!${rel}" mkdir "!BASE!${rel}"`;
+    lines.push(line);
+  }
+  lines.push('');
+
+  // 2) 末端フォルダに0KBファイル作成
+  const lmap = leafFilesMap(root);
+  for(const rel in lmap){
+    const files = lmap[rel]||[];
+    for(const f of files){
+      const p = `"!BASE!${rel}\\${f}"`;
+      lines.push(`if not exist ${p} type nul > ${p}`);
+    }
+  }
+  lines.push('');
+  lines.push('echo 完了しました。');
+  lines.push('pause');
+
+  const script = lines.join('\r\n');
+  // プレビュー更新
+  const previewEl = document.getElementById('preview');
+  if(previewEl){ previewEl.value = script; }
+  return script;
+}
+
+/* ==========================
+   保存/読込
+========================== */
+async function save(){
+  await idbSet('state', JSON.stringify(state));
+}
+function saveAndRender(){ save(); renderTree(); renderRight(); buildBat(state); }
+
+async function load(){
+  const raw = await idbGet('state');
+  if(raw){
+    try{ state = JSON.parse(raw); }
+    catch(e){ console.warn('state parse failed', e); }
+  }
+  renderTree(); renderRight(); buildBat(state);
+}
+
+/* ==========================
+   起動
+========================== */
+(async function init(){
+  await idbOpen();
+  await load();
+  // 初期選択
+  if(!state.selectedId) state.selectedId = state.tree.id; renderTree(); renderRight(); updateRenameUI();
+})();
+</script>
+</body>
+</html>
